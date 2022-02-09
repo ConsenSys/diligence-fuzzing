@@ -19,6 +19,8 @@ def truffle_project(tmp_path, request):
     os.makedirs(str(tmp_path / "build/contracts/MasterChefV2.sol/"))
     os.makedirs(str(tmp_path / "contracts"))
 
+    # we create the config file NOT in the temp directory, but in the CWD because it's where pytest
+    # is running and looking for the file. At the end of the test we delete the file
     with open("./truffle-config.js", "w+") as config_f:
         json.dump("sample", config_f)
 
@@ -43,7 +45,9 @@ def brownie_project(tmp_path):
     os.makedirs(str(tmp_path / "build/contracts/"))
     os.makedirs(str(tmp_path / "contracts/"))
 
-    with open("./brownie-config.yaml", "w+") as config_f:
+    # we create the config file NOT in the temp directory, but in the CWD because it's where pytest
+    # is running and looking for the file. At the end of the test we delete the file
+    with open("brownie-config.yaml", "w+") as config_f:
         json.dump("sample", config_f)
 
     # patch brownie artifact with temp path
@@ -59,8 +63,45 @@ def brownie_project(tmp_path):
         sol_f.write("original sol code here")
 
     yield None
-    # cleaning up test files
-    os.remove(str(Path("./brownie-config.yaml").absolute()))
+    os.remove(Path("brownie-config.yaml").absolute())
+
+
+@pytest.fixture()
+def dapptools_project(tmp_path):
+    original_artifact = get_test_case("testdata/dapptools_artifact.json")
+
+    # add dapptools project structure
+    os.makedirs(str(tmp_path / "out/"))
+    os.makedirs(str(tmp_path / "src/test/utils/"))
+    os.makedirs(str(tmp_path / "lib/openzeppelin-contracts/contracts/utils/"))
+    os.makedirs(str(tmp_path / "lib/openzeppelin-contracts/contracts/access/"))
+    os.makedirs(str(tmp_path / "lib/ds-test/src/"))
+
+    # create dapptools config file
+    # we create the config file NOT in the temp directory, but in the CWD because it's where pytest
+    # is running and looking for the file. At the end of the test we delete the file
+    with open(".dapprc", "w+") as config_f:
+        json.dump("sample", config_f)
+
+    # patch dapptools artifact with temp path
+    artifact = {"sources": {}, "contracts": {}}
+    for k, v in original_artifact["sources"].items():
+        artifact["sources"][f"{tmp_path}/{k}"] = v
+    for k, v in original_artifact["contracts"].items():
+        artifact["contracts"][f"{tmp_path}/{k}"] = v
+
+    # Create a temp dapptools artifacts file with the patched locations
+    with open(tmp_path / "out/dapp.sol.json", "w+") as artifact_f:
+        json.dump(artifact, artifact_f)
+    # Create the temp solidity files
+    for k, v in artifact["contracts"].items():
+        with open(k, "w+") as sol_f:
+            sol_f.write("sol code here")
+        with open(k+".original", "w+") as original_sol_f:
+            original_sol_f.write("original sol code here")
+
+    yield None
+    os.remove(Path(".dapprc").absolute())
 
 
 @pytest.fixture()

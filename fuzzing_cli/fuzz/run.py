@@ -1,6 +1,7 @@
 import logging
 import traceback
 from pathlib import Path
+from typing import Optional
 
 import click
 from click import ClickException, UsageError
@@ -32,6 +33,13 @@ def check_contract(rpc_client: RPCClient, deployed_contract_address: str):
 
 @click.command("run")
 @click.argument("target", default=None, nargs=-1)
+@click.option(
+    "-d",
+    "--ide",
+    type=click.STRING,
+    default=None,
+    help=f"Project's IDE. Valid values - {', '.join(IDERepository.get_instance().ides.keys())}",
+)
 @click.option(
     "-a",
     "--address",
@@ -103,6 +111,7 @@ def check_contract(rpc_client: RPCClient, deployed_contract_address: str):
 def fuzz_run(
     ctx,
     target,
+    ide: Optional[str],
     address,
     more_addresses,
     corpus_target,
@@ -135,6 +144,7 @@ def fuzz_run(
             k: v
             for k, v in (
                 {
+                    "ide": ide or analyze_config.get("ide"),
                     "build_directory": analyze_config.get("build_directory"),
                     "deployed_contract_address": address
                     or analyze_config.get("deployed_contract_address"),
@@ -171,10 +181,17 @@ def fuzz_run(
     )
 
     repo = IDERepository.get_instance()
-
-    _IDEClass = repo.detect_ide()
-    if not _IDEClass:
-        raise UsageError(f"No supported IDE was detected")
+    
+    if options.ide:
+        LOGGER.debug(f'"{options.ide}" IDE is specified')
+        _IDEClass = repo.get_ide(options.ide)
+    else:
+        LOGGER.debug("IDE not specified. Detecting one")
+        _IDEClass = repo.detect_ide()
+        if not _IDEClass:
+            LOGGER.debug("No supported IDE was detected")
+            raise UsageError(f"No supported IDE was detected")
+        LOGGER.debug(f'"{_IDEClass.get_name()}" IDE detected')
 
     artifacts: IDEArtifacts = _IDEClass(
         targets=options.target,

@@ -188,11 +188,3 @@ class TruffleArtifacts(IDEArtifacts):
                 )
             )
         return contracts
-
-    @staticmethod
-    def get_default_build_dir() -> str:
-        return "build/contracts"
-
-    @staticmethod
-    def get_default_sources_dir() -> str:
-        return "contracts"

@@ -34,8 +34,15 @@ def generate_fuzz_config(
     targets: str = "contracts",
     not_include: List[str] = [],
     add_refresh_token: bool = False,
+    import_remaps: bool = False,
 ):
-    config_file = "fuzz:"
+    config_file = ""
+    if import_remaps:
+        config_file += "analyze:"
+        config_file += "\n  remappings:"
+        config_file += '\n    - "@openzeppelin=lib/openzeppelin-contracts"'
+
+    config_file += "\nfuzz:"
     if "deployed_contract_address" not in not_include:
         config_file += '\n  deployed_contract_address: "0x7277646075fa72737e1F6114654C5d9949a67dF2"'
     if "number_of_cores" not in not_include:

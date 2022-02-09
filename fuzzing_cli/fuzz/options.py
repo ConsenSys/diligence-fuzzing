@@ -7,6 +7,7 @@ import click
 class FuzzingOptions:
     def __init__(
         self,
+        ide: Optional[str] = None,
         build_directory: str = None,
         deployed_contract_address: Optional[str] = None,
         target: Optional[List[str]] = None,
@@ -22,6 +23,7 @@ class FuzzingOptions:
         api_key: Optional[str] = None,
         project: Optional[str] = None,
     ):
+        self.ide: Optional[str] = ide and ide.lower()
         self.additional_contracts_addresses = additional_contracts_addresses
         self.corpus_target = corpus_target
         self.map_to_original_source = map_to_original_source
